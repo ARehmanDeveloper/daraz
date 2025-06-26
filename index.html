@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daraz Clone</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0; padding: 0;
+    background: #f5f5f5;
+  }
+  header {
+    background: #ff3f6c;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    margin: 0;
+  }
+  #login-section, #register-section, #welcome-section {
+    display: none;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 0 20px;
+  }
+  .products {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+  .product-card {
+    background: white;
+  
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 0 5px #ddd;
+    cursor: pointer;
+    transition: box-shadow 0.3s;
+  }
+  .product-card:hover {
+    box-shadow: 0 0 10px #ff3f6c;
+  }
+  .product-card img {
+    max-width: 100%;
+    height: 150px;
+    object-fit: contain;
+  }
+  .product-title {
+    font-weight: bold;
+    margin: 10px 0 5px 0;
+  }
+  .product-price {
+    color: #ff3f6c;
+    font-weight: bold;
+  }
+
+  #product-detail {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+  #product-detail .detail-content {
+    background: white;
+    max-width: 600px;
+    width: 90%;
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+  }
+  #product-detail img {
+    max-width: 100%;
+    height: 250px;
+    object-fit: contain;
+  }
+  #product-detail .close-btn {
+    position: absolute;
+    top: 10px; right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .reviews {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+  }
+  button {
+    background: #ff3f6c;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  button:hover {
+    background: #e63950;
+  }
+
+  form {
+    background: white;
+    max-width: 350px;
+    margin: 40px auto;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 8px #ccc;
+  }
+  form input[type="text"], form input[type="password"], form input[type="email"] {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0 16px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  form button {
+    width: 100%;
+  }
+  #logout-btn {
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: white;
+  }
+  #logout-btn:hover {
+    background: white;
+    color: #ff3f6c;
+  }
+</style>
+</head>
+<body>
+
+<header>
+ 
+  <h1>Daraz</h1>
+  <div id="auth-buttons">
+    <button id="show-login-btn">Login</button>
+    <button id="show-register-btn">Register</button>
+    <button id="go-to-cart-btn">🛒 Cart</button>
+  </div>
+  <div id="welcome-section">
+    Welcome, <span id="username-display"></span>!
+    <button id="logout-btn">Logout</button>
+    <button id="go-to-cart-btn">🛒 Cart</button>
+  </div>
+</header>
+
+
+<div id="login-section">
+  <form id="login-form">
+    <h2>Login</h2>
+    <input type="text" id="login-username" placeholder="Username" required />
+    <input type="password" id="login-password" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <p><small>Don't have an account? <a href="#" id="to-register-link">Register here</a></small></p>
+  </form>
+</div>
+
+<div id="register-section">
+  <form id="register-form">
+    <h2>Register</h2>
+    <input type="text" id="register-username" placeholder="Username" required />
+    <input type="email" id="register-email" placeholder="Email" required />
+    <input type="password" id="register-password" placeholder="Password" required />
+    <button type="submit">Register</button>
+    <p><small>Already have an account? <a href="#" id="to-login-link">Login here</a></small></p>
+  </form>
+</div>
+
+<div class="container" id="main-content">
+  <div class="products" id="products"></div>
+</div>
+
+<div id="product-detail">
+  <div class="detail-content">
+    <span class="close-btn" id="close-detail">&times;</span>
+    <img id="detail-image" src="" alt="Product Image" />
+    <h2 id="detail-title"></h2>
+    <p id="detail-description"></p>
+    <p><strong>Price: </strong> $<span id="detail-price"></span></p>
+    <p><strong>Rating: </strong> <span id="detail-rating"></span> / 5</p>
+    <div class="reviews" id="detail-reviews"></div>
+    <button id="add-to-cart-btn">Add to Cart</button>
+    <button id="buy-now-btn">Buy Now</button>
+  </div>
+</div>
+
+<script>
+  let products = [];
+  let loggedInUser = null;
+
+  const productsContainer = document.getElementById('products');
+  const productDetail = document.getElementById('product-detail');
+  const detailImage = document.getElementById('detail-image');
+  const detailTitle = document.getElementById('detail-title');
+  const detailDescription = document.getElementById('detail-description');
+  const detailPrice = document.getElementById('detail-price');
+  const detailRating = document.getElementById('detail-rating');
+  const detailReviews = document.getElementById('detail-reviews');
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
+  const buyNowBtn = document.getElementById('buy-now-btn');
+  const closeDetailBtn = document.getElementById('close-detail');
+  const loginSection = document.getElementById('login-section');
+  const registerSection = document.getElementById('register-section');
+  const mainContent = document.getElementById('main-content');
+  const authButtons = document.getElementById('auth-buttons');
+  const welcomeSection = document.getElementById('welcome-section');
+  const usernameDisplay = document.getElementById('username-display');
+  const logoutBtn = document.getElementById('logout-btn');
+  const showLoginBtn = document.getElementById('show-login-btn');
+  const showRegisterBtn = document.getElementById('show-register-btn');
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  const toRegisterLink = document.getElementById('to-register-link');
+  const toLoginLink = document.getElementById('to-login-link');
+
+  let currentProduct = null;
+
+  async function fetchProducts() {
+    try {
+      const res = await fetch('https://dummyjson.com/products?limit=100');
+      const data = await res.json();
+      products = data.products;
+      renderProducts();
+    } catch (e) {
+      alert('Failed to load products.');
+    }
+  }
+
+  function renderProducts() {
+    productsContainer.innerHTML = '';
+    products.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img src="${product.thumbnail}" alt="${product.title}" />
+        <div class="product-title">${product.title}</div>
+        <div class="product-price">$${product.price}</div>
+      `;
+      card.onclick = () => openProductDetail(product.id);
+      productsContainer.appendChild(card);
+    });
+  }
+
+  function openProductDetail(id) {
+    currentProduct = products.find(p => p.id === id);
+    if (!currentProduct) return;
+    detailImage.src = currentProduct.thumbnail;
+    detailTitle.textContent = currentProduct.title;
+    detailDescription.textContent = currentProduct.description;
+    detailPrice.textContent = currentProduct.price;
+    detailRating.textContent = currentProduct.rating;
+    detailReviews.textContent = `Reviews: ${currentProduct.stock} available`;
+    productDetail.style.display = 'flex';
+  }
+
+  closeDetailBtn.onclick = () => {
+    productDetail.style.display = 'none';
+    currentProduct = null;
+  };
+
+  addToCartBtn.onclick = () => {
+    if (!loggedInUser) {
+      alert('Please login first to add to cart.');
+      showLogin();
+      return;
+    }
+    if (currentProduct) {
+      let cart = JSON.parse(localStorage.getItem('darazCart')) || [];
+      let found = cart.find(item => item.id === currentProduct.id);
+      if (found) {
+        found.qty++;
+      } else {
+        cart.push({...currentProduct, qty: 1});
+      }
+      localStorage.setItem('darazCart', JSON.stringify(cart));
+      alert('Added to cart!');
+    }
+  };
+
+  buyNowBtn.onclick = () => {
+    if (!loggedInUser) {
+      alert('Please login first to buy.');
+      showLogin();
+      return;
+    }
+    if (currentProduct) {
+      alert(`Thanks for buying ${currentProduct.title} for $${currentProduct.price}!`);
+      productDetail.style.display = 'none';
+    }
+  };
+
+  function showLogin() {
+    loginSection.style.display = 'block';
+    registerSection.style.display = 'none';
+    mainContent.style.display = 'none';
+    authButtons.style.display = 'none';
+    welcomeSection.style.display = 'none';
+  }
+
+  function showRegister() {
+    registerSection.style.display = 'block';
+    loginSection.style.display = 'none';
+    mainContent.style.display = 'none';
+    authButtons.style.display = 'none';
+    welcomeSection.style.display = 'none';
+  }
+
+  function showMain() {
+    mainContent.style.display = 'block';
+    loginSection.style.display = 'none';
+    registerSection.style.display = 'none';
+    authButtons.style.display = 'none';
+    welcomeSection.style.display = 'block';
+    usernameDisplay.textContent = loggedInUser.username;
+  }
+
+  function saveUser(user) {
+    localStorage.setItem('darazUser', JSON.stringify(user));
+  }
+  function loadUser() {
+    const user = localStorage.getItem('darazUser');
+    return user ? JSON.parse(user) : null;
+  }
+  function saveUsersList(users) {
+    localStorage.setItem('darazUsersList', JSON.stringify(users));
+  }
+  function loadUsersList() {
+    const users = localStorage.getItem('darazUsersList');
+    return users ? JSON.parse(users) : [];
+  }
+
+  registerForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = document.getElementById('register-username').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+
+    if (!username || !email || !password) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    let users = loadUsersList();
+    if (users.find(u => u.username === username)) {
+      alert('Username already exists');
+      return;
+    }
+
+    users.push({username, email, password});
+    saveUsersList(users);
+    alert('Registration successful! Please login now.');
+    showLogin();
+  });
+
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    let users = loadUsersList();
+    const user = users.find(u => u.username === username && u.password === password);
+    if (!user) {
+      alert('Invalid username or password');
+      return;
+    }
+    loggedInUser = user;
+    saveUser(user);
+    showMain();
+  });
+
+  logoutBtn.onclick = () => {
+    loggedInUser = null;
+    localStorage.removeItem('darazUser');
+    authButtons.style.display = 'block';
+    welcomeSection.style.display = 'none';
+    mainContent.style.display = 'block';
+  };
+
+  showLoginBtn.onclick = showLogin;
+  showRegisterBtn.onclick = showRegister;
+  toRegisterLink.onclick = e => {
+    e.preventDefault();
+    showRegister();
+  };
+  toLoginLink.onclick = e => {
+    e.preventDefault();
+    showLogin();
+  };
+
+  (function init() {
+    const savedUser = loadUser();
+    if (savedUser) {
+      loggedInUser = savedUser;
+      showMain();
+    }
+    fetchProducts();
+  })();
+  document.querySelectorAll('#go-to-cart-btn').forEach(btn => {
+  btn.onclick = () => {
+    window.location.href = 'cart.html';
+  };
+});
+
+</script>
+</body>
+</html>
